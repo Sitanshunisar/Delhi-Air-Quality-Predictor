@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Comparison: LSTM vs. GRU vs. Stacking</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='1.4') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>3-Model Comparison Dashboard</h1>
+        <p>
+            Comparing RNNs (LSTM, GRU) and a static StackingRegressor
+            on the unseen test dataset.
+        </p>
+    </div>
+
+    <div class="results-container" id="results-display">
+        <div class="result-box"><h3>Loading Scores...</h3></div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="predictionChart"></canvas>
+    </div>
+
+    <script>
+        (async function() {
+            // Add a cache-buster to the data fetch as well
+            const response = await fetch('/get_chart_data?t=' + new Date().getTime());
+            const data = await response.json();
+
+            // Populate R² scores
+            const resultsDisplay = document.getElementById('results-display');
+            resultsDisplay.innerHTML = `
+                <div class="result-box stacker">
+                    <h3>StackingRegressor R²</h3>
+                    <p>${data.r2_stacker}</p>
+                </div>
+                <div class="result-box gru">
+                    <h3>GRU R² (Best Forecaster)</h3>
+                    <p>${data.r2_gru}</p>
+                </div>
+                <div class="result-box lstm">
+                    <h3>LSTM Model R²</h3>
+                    <p>${data.r2_lstm}</p>
+                </div>
+            `;
+
+            // --- *** FINAL COLOR SCHEME *** ---
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line', 
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Actual PM2.5',
+                            data: data.actual_data,
+                            borderColor: 'rgba(0, 0, 0, 1)',         // BLACK
+                            borderWidth: 2,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'Predicted (GRU)',
+                            data: data.predicted_data_gru,
+                            borderColor: 'rgba(255, 99, 132, 1)',    // RED
+                            borderWidth: 2,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'Predicted (LSTM)',
+                            data: data.predicted_data_lstm,
+                            borderColor: 'rgba(54, 162, 235, 1)',    // BLUE
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            borderDash: [5, 5] 
+                        },
+                        {
+                            label: 'Predicted (Stacking)',
+                            data: data.predicted_data_stacker,
+                            borderColor: 'rgba(75, 192, 192, 1)',    // GREEN
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            borderDash: [5, 5] 
+                        }
+                    ]
+                },
+                options: { /* ... (options are correct) ... */ }
+            });
+        })();
+    </script>
+
+</body>
+</html>
