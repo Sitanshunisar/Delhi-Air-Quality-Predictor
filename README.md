@@ -1,49 +1,96 @@
-# Delhi-AQI-Flask-App
+# 🌬️ Delhi AQI Predictor
 
-### Overview
+> Predict Delhi PM2.5 air quality using an ensemble of ML models (StackingRegressor, LSTM, GRU), served via **Streamlit**, with full CI/CD, Docker, Kubernetes, and observability.
 
-This is a Flask app that predicts the PM2.5 based on the Delhi-AQI dataset. The app serves an interactive dashboard that visually compares the performance of three different machine learning models to analyze air quality.
+## Quick Start
 
-### Model
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-This project compares the "inference" power of a static model against the "forecasting" power of two Recurrent Neural Network (RNN) sequence models. After engineering cyclical "hour" features (`hour_sin`, `hour_cos`) and running on a proper temporal-split test set, the results are:
+### 2. Train all models
+```bash
+python -m src.train
+```
 
-* **1. StackingRegressor:** The "inference" model (using CatBoost, LightGBM, and Ridge). It predicts the 10 AM value using other 10 AM data, achieving a high **$R^2$ score of 0.9618**.
+### 3. Run Streamlit app
+```bash
+streamlit run app/streamlit_app.py
+```
 
-* **2. GRU (Gated Recurrent Unit):** The best *forecasting* model. It predicts the 10 AM value using *only* data from 9 AM and earlier. It achieved an **$R^2$ score of 0.8905**.
+## Docker
 
-* **3. LSTM (Long Short-Term Memory):** The second forecasting model, which was outperformed by the simpler GRU on this dataset, achieving an **$R^2$ score of 0.8359**.
+```bash
+docker-compose up --build
+```
 
-### Technologies Used
+| Service    | URL                   |
+|------------|-----------------------|
+| Streamlit  | http://localhost:8501 |
+| Prometheus | http://localhost:9090 |
+| Grafana    | http://localhost:3000 |
 
-* Python
-* Flask
-* Pandas
-* Numpy
-* Scikit-learn
-* TensorFlow (Keras)
-* CatBoost
-* LightGBM
-* HTML/CSS
-* Chart.js
+## CI/CD (GitHub Actions)
 
-### How to Run
+| Stage        | Trigger         | Action                      |
+|--------------|-----------------|-----------------------------|
+| Test         | Every push / PR | `pytest tests/`             |
+| Lint         | Every push / PR | `ruff check`                |
+| Build & Push | Merge → `main`  | Docker image → GHCR         |
+| Deploy       | Merge → `main`  | `kubectl apply` to GKE      |
 
-1.  Clone the repository:
-    ```bash
-    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-    ```
-2.  Install the required packages:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  **Train the models (Do this ONCE):**
-    This script will create all 6 model files and place them in the `models/` folder.
-    ```bash
-    python notebooks/train_all_models.py
-    ```
-4.  Run the Flask app:
-    ```bash
-    python app.py
-    ```
-5.  Open your browser and go to `http://127.0.0.1:5000`
+Set GitHub Secret `KUBE_CONFIG` (base64-encoded kubeconfig) to enable the deploy job.
+
+## Kubernetes
+
+```bash
+kubectl apply -f infra/k8s/
+kubectl get svc delhi-aqi-service   # Get external IP
+```
+
+## Terraform (GCP / GKE)
+
+```bash
+cd infra/terraform
+terraform init
+terraform plan  -var="project_id=YOUR_GCP_PROJECT"
+terraform apply -var="project_id=YOUR_GCP_PROJECT"
+```
+
+## Monitoring
+
+Grafana runs at http://localhost:3000 (admin / admin).
+Import `monitoring/grafana-dashboard.json` to load the preconfigured dashboard.
+
+## Models
+
+| Model             | Type        | R²     | Use case             |
+|-------------------|-------------|--------|----------------------|
+| StackingRegressor | Inference   | 0.9618 | Real-time inference  |
+| GRU               | Forecasting | 0.8905 | Sequence forecasting |
+| LSTM              | Forecasting | 0.8359 | Sequence forecasting |
+
+## Project Structure
+
+```
+delhi-aqi-predictor/
+├── data/                   Raw CSV data
+├── models/                 Trained model artifacts
+├── src/                    Core ML library
+│   ├── config.py
+│   ├── data_loader.py
+│   ├── train.py
+│   └── predict.py
+├── app/
+│   └── streamlit_app.py    Streamlit UI
+├── notebooks/              Exploratory analysis
+├── tests/                  Pytest test suite
+├── infra/
+│   ├── terraform/          GCP infrastructure
+│   └── k8s/                Kubernetes manifests
+├── monitoring/             Prometheus + Grafana
+├── .github/workflows/      GitHub Actions CI/CD
+├── Dockerfile              Streamlit container
+└── docker-compose.yml      Local full stack
+```

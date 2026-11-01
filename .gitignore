@@ -1,10 +1,43 @@
-# Python cache
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# Jupyter Notebook checkpoints
+# Jupyter
 .ipynb_checkpoints/
 
-# System files
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Models (large binary files — store with DVC or Git LFS)
+models/*.h5
+models/*.pkl
+
+# Secrets
+*.env
+.env
+secrets/
+kubeconfig.yaml
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Outputs
+outputs/graphs/*.png
