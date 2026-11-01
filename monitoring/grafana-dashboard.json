@@ -6,49 +6,61 @@
   "panels": [
     {
       "id": 1,
-      "title": "HTTP Requests per Second",
-      "type": "timeseries",
-      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "title": "Total Predictions Requested",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
       "targets": [
         {
-          "expr": "rate(flask_http_request_total[5m])",
-          "legendFormat": "req/s"
+          "expr": "delhi_aqi_predictions_total",
+          "legendFormat": "predictions"
         }
       ]
     },
     {
       "id": 2,
-      "title": "Response Latency (p95)",
-      "type": "timeseries",
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "title": "Latest Predicted PM2.5 (µg/m³)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 6 },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(flask_http_request_duration_seconds_bucket[5m]))",
-          "legendFormat": "p95 latency"
+          "expr": "delhi_aqi_last_predicted_pm25",
+          "legendFormat": "PM2.5"
         }
       ]
     },
     {
       "id": 3,
-      "title": "Active Users (Streamlit)",
-      "type": "stat",
-      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 4 },
+      "title": "Prediction Request Rate (per minute)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
       "targets": [
         {
-          "expr": "streamlit_active_sessions",
-          "legendFormat": "sessions"
+          "expr": "rate(delhi_aqi_predictions_total[1m]) * 60",
+          "legendFormat": "req/min"
         }
       ]
     },
     {
       "id": 4,
-      "title": "Prediction Errors",
+      "title": "Streamlit App Status (1 = UP, 0 = DOWN)",
       "type": "stat",
-      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 4 },
+      "gridPos": { "x": 0, "y": 6, "w": 6, "h": 6 },
       "targets": [
         {
-          "expr": "sum(rate(flask_http_request_total{status=~\"5..\"}[5m]))",
-          "legendFormat": "errors/s"
+          "expr": "up{job=\"delhi-aqi-streamlit\"}",
+          "legendFormat": "App Up"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Python Memory Usage (Resident Bytes)",
+      "type": "timeseries",
+      "gridPos": { "x": 6, "y": 6, "w": 18, "h": 6 },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"delhi-aqi-streamlit\"}",
+          "legendFormat": "RAM Bytes"
         }
       ]
     }

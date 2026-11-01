@@ -16,6 +16,42 @@ from src.predict import get_prediction_data, load_all_models
 
 warnings.filterwarnings("ignore")
 
+# --- Prometheus Metrics Setup ---
+@st.cache_resource
+def get_prometheus_metrics():
+    """Create or retrieve cached Prometheus metrics and start HTTP server."""
+    try:
+        from prometheus_client import REGISTRY, Counter, Gauge, start_http_server
+
+        # Start exporter if not already active
+        try:
+            start_http_server(8000, addr="0.0.0.0")
+        except OSError:
+            pass
+
+        # Avoid DuplicateTimeseries on rerun
+        if "delhi_aqi_predictions_total" in REGISTRY._names_to_collectors:
+            counter = REGISTRY._names_to_collectors["delhi_aqi_predictions_total"]
+        else:
+            counter = Counter(
+                "delhi_aqi_predictions_total", "Total AQI predictions requested"
+            )
+
+        if "delhi_aqi_last_predicted_pm25" in REGISTRY._names_to_collectors:
+            gauge = REGISTRY._names_to_collectors["delhi_aqi_last_predicted_pm25"]
+        else:
+            gauge = Gauge(
+                "delhi_aqi_last_predicted_pm25", "Latest predicted PM2.5 concentration"
+            )
+
+        return counter, gauge
+    except Exception as exc:
+        print(f"Prometheus metrics init note: {exc}")
+        return None, None
+
+
+PRED_COUNTER, LAST_PM25_GAUGE = get_prometheus_metrics()
+
 st.set_page_config(
     page_title="Delhi AQI Intelligence & Predictor",
     page_icon="🌬️",
@@ -262,6 +298,12 @@ with tab2:
                 pca_features = pca.transform(scaled)
                 pred_val = float(model.predict(pca_features)[0])
                 category, health_msg, color_code = get_aqi_category(pred_val)
+
+                # Record Prometheus metrics
+                if PRED_COUNTER is not None:
+                    PRED_COUNTER.inc()
+                if LAST_PM25_GAUGE is not None:
+                    LAST_PM25_GAUGE.set(pred_val)
 
                 # 3. Display Result
                 st.markdown("---")

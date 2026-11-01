@@ -13,6 +13,9 @@ spec:
       component: streamlit
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
       labels:
         app: delhi-aqi
         component: streamlit
@@ -22,6 +25,9 @@ spec:
           image: ghcr.io/YOUR_ORG/delhi-aqi-predictor:latest
           ports:
             - containerPort: 8501
+              name: http
+            - containerPort: 8000
+              name: metrics
           resources:
             requests:
               cpu: "250m"
